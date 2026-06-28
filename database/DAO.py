@@ -37,9 +37,9 @@ class DAO():
                     from artist 
                     where ArtistId in (
                     select ArtistId
-                    from album a, track t, genre g
-                    where a.AlbumId = t.AlbumId and t.GenreId = g.GenreId
-                    and g.GenreId = %s)"""
+                    from album a, track t
+                    where a.AlbumId = t.AlbumId 
+                    and t.GenreId = %s)"""
 
         cursor.execute(query, (genere,))
 
@@ -59,15 +59,15 @@ class DAO():
         cursor = conn.cursor(dictionary=True)
         query = """ with nodi as (
                     select distinct ArtistId
-                    from album a, track t, genre g
-                    where a.AlbumId = t.AlbumId and t.GenreId = g.GenreId
-                    and g.GenreId = %s),
+                    from album a, track t
+                    where a.AlbumId = t.AlbumId and t.GenreId = %s),
                     possibili as(
                     select a.ArtistId, i.CustomerId 
                     from invoice i, invoiceline i2, track t, album a 
                     where t.TrackId = i2.TrackId 
                     and i.InvoiceId = i2.InvoiceId 
                     and t.AlbumId = a.AlbumId 
+                    and t.GenreId = %s
                     and a.ArtistId in (select * from nodi)),
                     statistiche as(
                     select a.ArtistId , sum(Quantity) as popolarita 
@@ -75,6 +75,7 @@ class DAO():
                     where t.TrackId = i4.TrackId 
                     and i3.InvoiceId = i4.InvoiceId 
                     and t.AlbumId = a.AlbumId 
+                    and t.GenreId = %s
                     and a.ArtistId in (select * from nodi)
                     group by a.ArtistId )
                     select distinct p1.ArtistId as a1, p2.ArtistId as a2, (s1.popolarita + s2.popolarita) as peso
@@ -82,9 +83,10 @@ class DAO():
                     where p1.CustomerId = p2.CustomerId
                     and s1.ArtistId = p1.ArtistId and s2.ArtistId = p2.ArtistId
                     and s1.popolarita >= s2.popolarita
-                    and p1.ArtistId <> p2.ArtistId """
+                    and p1.ArtistId <> p2.ArtistId
+                    """
 
-        cursor.execute(query, (genere,))
+        cursor.execute(query, (genere, genere, genere,))
 
         for row in cursor:
             results.append((mappa[row['a1']], mappa[row['a2']], row['peso']))
